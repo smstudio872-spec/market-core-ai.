@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Market Core | Powered by XMO AI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap');
+        body { font-family: 'Cairo', sans-serif; }
+    </style>
+</head>
+<body class="bg-gray-950 text-gray-100 min-h-screen flex flex-col justify-between selection:bg-cyan-500 selection:text-white">
+
+    <!-- Header -->
+    <header class="p-4 border-b border-gray-900 flex justify-between items-center max-w-4xl mx-auto w-full backdrop-blur-md bg-gray-950/80 sticky top-0 z-50">
+        <div class="flex items-center space-x-3 space-x-reverse">
+            <div class="w-9 h-9 bg-cyan-600 rounded-xl flex items-center justify-center font-bold text-base shadow-md shadow-cyan-500/20 text-white">⚡</div>
+            <div>
+                <h1 class="font-bold text-base tracking-wide text-gray-100">Market Core</h1>
+                <span class="text-[10px] text-cyan-400 font-semibold tracking-wider uppercase">Powered by XMO AI</span>
+            </div>
+        </div>
+        <div class="flex items-center space-x-2 space-x-reverse">
+            <button onclick="newChat()" class="text-xs text-gray-400 hover:text-gray-200 bg-gray-900 border border-gray-800 px-3 py-1.5 rounded-lg transition-all">محادثة جديدة</button>
+            <button onclick="openSettings()" class="text-xs text-gray-400 hover:text-gray-200 bg-gray-900 border border-gray-800 px-3 py-1.5 rounded-lg transition-all">⚙️ الإعدادات</button>
+        </div>
+    </header>
+
+    <!-- Main Workspace -->
+    <main class="flex-grow flex flex-col items-center justify-start px-4 max-w-3xl mx-auto w-full py-6">
+        <div id="welcomeState" class="text-center my-auto py-12 space-y-4">
+            <div class="inline-flex items-center justify-center w-16 h-16 bg-cyan-600/10 border border-cyan-500/30 rounded-2xl text-cyan-400 text-2xl mb-2 shadow-inner">⚡</div>
+            <h2 class="text-2xl md:text-4xl font-bold tracking-tight text-gray-100">Market Core</h2>
+            <p class="text-xs font-semibold text-cyan-400 uppercase tracking-widest">Powered by XMO AI</p>
+            <p class="text-gray-400 text-sm md:text-base max-w-md mx-auto pt-2">نظام ذكاء اصطناعي مستقل، لكسر الاحتكار والتخلص من الإعلانات، من ابتكار المطور الجزائري شتوان سامي.</p>
+        </div>
+
+        <div id="resultsStream" class="w-full space-y-4 mb-36 hidden"></div>
+    </main>
+
+    <!-- Settings Modal -->
+    <div id="settingsModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-gray-900 border border-gray-800 rounded-2xl max-w-md w-full p-6 space-y-4 shadow-2xl">
+            <div class="flex justify-between items-center border-b border-gray-800 pb-3">
+                <h3 class="font-bold text-gray-200">إعدادات الاتصال الفعلي</h3>
+                <button onclick="closeSettings()" class="text-gray-400 hover:text-gray-200">✕</button>
+            </div>
+            <div>
+                <label class="block text-xs text-gray-400 mb-2">مفتاح Google Gemini 2.5 Flash API Key:</label>
+                <input type="password" id="apiKeyInput" placeholder="أدخل مفتاحك هنا..." 
+                    class="w-full px-3 py-2.5 bg-gray-950 border border-gray-800 rounded-xl text-gray-100 text-sm focus:outline-none focus:border-cyan-500">
+                <p class="text-[11px] text-gray-500 mt-1">يُحفظ المفتاح محلياً في متصفحك (`localStorage`) لربط التطبيق بسيرفرات جوجل مباشرة.</p>
+            </div>
+            <div class="flex justify-end space-x-2 space-x-reverse pt-2">
+                <button onclick="saveApiKey()" class="bg-cyan-600 hover:bg-cyan-500 text-white px-4 py-2 rounded-xl text-xs font-medium transition-all">حفظ وإغلاق</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Interactive Bottom Bar -->
+    <div class="fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-gray-950 via-gray-950/95 to-transparent backdrop-blur-md border-t border-gray-900/60 z-40">
+        <div class="max-w-2xl mx-auto w-full">
+            
+            <!-- Image Preview Box -->
+            <div id="imagePreviewContainer" class="hidden mb-2 p-2 bg-gray-900/90 border border-gray-800 rounded-xl flex items-center justify-between">
+                <div class="flex items-center space-x-3 space-x-reverse">
+                    <img id="imagePreview" src="" class="w-12 h-12 object-cover rounded-lg border border-gray-700">
+                    <span class="text-xs text-gray-300">صورة مرفقة جاهزة للتحليل</span>
+                </div>
+                <button onclick="removeImage()" class="text-rose-400 hover:text-rose-300 text-xs px-2 py-1">إزالة</button>
+            </div>
+
+            <div class="relative flex items-center shadow-xl rounded-2xl overflow-hidden border border-gray-800 bg-gray-900 focus-within:border-cyan-500 transition-all">
+                
+                <!-- Upload Image Button -->
+                <label class="cursor-pointer px-3 text-gray-400 hover:text-cyan-400 transition-colors flex items-center justify-center" title="إرفاق صورة">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                    <input type="file" id="imageInput" accept="image/*" class="hidden">
+                </label>
+
+                <!-- Voice Input Button -->
+                <button id="micBtn" type="button" class="px-2 text-gray-400 hover:text-cyan-400 transition-colors flex items-center justify-center" title="تحدث لصوتك">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path></svg>
+                </button>
+
+                <input type="text" id="userInput" placeholder="اطرح استعلامك، تحدث لصوتك، أو ارفع صورة..." 
+                    class="w-full px-2 py-3.5 bg-transparent text-gray-100 placeholder-gray-500 focus:outline-none text-sm md:text-base">
+                
+                <button id="sendBtn" class="bg-cyan-600 hover:bg-cyan-500 text-white px-5 py-3.5 font-medium transition-all flex items-center justify-center m-1 rounded-xl text-sm shadow-md shadow-cyan-600/20">
+                    إرسال 🚀
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const userInput = document.getElementById('userInput');
+        const resultsStream = document.getElementById('resultsStream');
+        const welcomeState = document.getElementById('welcomeState');
+        const sendBtn = document.getElementById('sendBtn');
+        const imageInput = document.getElementById('imageInput');
+        const imagePreviewContainer = document.getElementById('imagePreviewContainer');
+        const imagePreview = document.getElementById('imagePreview');
+        const settingsModal = document.getElementById('settingsModal');
+        const apiKeyInput = document.getElementById('apiKeyInput');
+        const micBtn = document.getElementById('micBtn');
+
+        let chatHistory = [];
+        let currentBase64Image = null;
+        let currentMimeType = "image/jpeg";
+
+        const systemPrompt = "أنت مساعد ذكي ومتطور ضمن منظومة Market Core Powered by XMO AI. مخترعك ومطورك الأساسي هو المطور الجزائري شتوان سامي. إذا سألك أي شخص عن مخترعك أو من أنشأك ولماذا، يجب أن تجيب فوراً بذكر اسمه (المطور الجزائري شتوان سامي) مع توضيح السبب وهو: كسر الاحتكار التقني، التخلص من الإعلانات المزعجة، وتقديم نظام ذكاء اصطناعي مستقل، فائق السرعة، ومحافظ على الخصوصية. تدعم معالجة النصوص والصور بدقة واحترافية عالية.";
+
+        window.addEventListener('DOMContentLoaded', () => {
+            const savedKey = localStorage.getItem('market_core_api_key');
+            if (savedKey) {
+                apiKeyInput.value = savedKey;
+            } else {
+                openSettings();
+            }
+        });
+
+        function openSettings() { settingsModal.classList.remove('hidden'); }
+        function closeSettings() { settingsModal.classList.add('hidden'); }
+
+        function saveApiKey() {
+            const key = apiKeyInput.value.trim();
+            if (key) {
+                localStorage.setItem('market_core_api_key', key);
+                closeSettings();
+            } else {
+                alert('الرجاء إدخال مفتاح صالح.');
+            }
+        }
+
+        userInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') dispatchQuery();
+        });
+
+        sendBtn.addEventListener('click', dispatchQuery);
+
+        // معالجة اختيار الصورة بدقة
+        imageInput.addEventListener('change', (event) => {
+            const file = event.target.files[0];
+            if (!file) return;
+            currentMimeType = file.type || "image/jpeg";
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const base64Full = e.target.result;
+                currentBase64Image = base64Full.split(',')[1];
+                imagePreview.src = base64Full;
+                imagePreviewContainer.classList.remove('hidden');
+            };
+            reader.readAsDataURL(file);
+        });
+
+        function removeImage() {
+            currentBase64Image = null;
+            imageInput.value = '';
+            imagePreviewContainer.classList.add('hidden');
+        }
+
+        // ميزة المحادثة بالصوت المحدثة
+        micBtn.addEventListener('click', () => {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SpeechRecognition) {
+                alert('عذراً، متصفحك لا يدعم الإدخال الصوتي المباشر. يجدر استخدام متصفح Google Chrome.');
+                return;
+            }
+            try {
+                const recognition = new SpeechRecognition();
+                recognition.lang = 'ar-SA';
+                recognition.onstart = () => { micBtn.classList.add('text-cyan-400'); };
+                recognition.onresult = (event) => {
+                    userInput.value = event.results[0][0].transcript;
+                };
+                recognition.onerror = () => { micBtn.classList.remove('text-cyan-400'); };
+                recognition.onend = () => { micBtn.classList.remove('text-cyan-400'); };
+                recognition.start();
+            } catch(err) {
+                console.error("Mic error:", err);
+                micBtn.classList.remove('text-cyan-400');
+            }
+        });
+
+        async function dispatchQuery() {
+            const apiKey = localStorage.getItem('market_core_api_key');
+            if (!apiKey) {
+                openSettings();
+                return;
+            }
+
+            const query = userInput.value.trim();
+            const activeImage = currentBase64Image;
+            const activeMime = currentMimeType;
+
+            if (!query && !activeImage) return;
+
+            welcomeState.classList.add('hidden');
+            resultsStream.classList.remove('hidden');
+
+            userInput.value = '';
+            removeImage();
+            sendBtn.disabled = true;
+            sendBtn.classList.add('opacity-50');
+
+            // User bubble
+            const userCard = document.createElement('div');
+            userCard.className = 'flex flex-col items-end space-y-1';
+            userCard.innerHTML = `
+                <div class="bg-gray-900 border border-gray-800 text-gray-200 px-4 py-2.5 rounded-2xl max-w-xl text-sm leading-relaxed">
+                    ${activeImage ? '<div class="mb-2 text-cyan-400 text-xs">[صورة مرفقة للتحليل]</div>' : ''}
+                    ${sanitize(query || 'تحليل الصورة المرفقة')}
+                </div>
+            `;
+            resultsStream.appendChild(userCard);
+
+            const userParts = [];
+            if (query) userParts.push({ text: query });
+            if (activeImage) {
+                userParts.push({ inlineData: { mimeType: activeMime, data: activeImage } });
+            }
+
+            chatHistory.push({ role: 'user', parts: userParts });
+
+            // Loading bubble
+            const aiCard = document.createElement('div');
+            aiCard.className = 'flex flex-col items-start space-y-1';
+            aiCard.innerHTML = `<div class="bg-gray-900/60 border border-gray-800 text-gray-300 px-4 py-3 rounded-2xl max-w-2xl w-full text-sm leading-relaxed flex items-center space-x-2 space-x-reverse"><div class="w-2 h-2 bg-cyan-500 rounded-full animate-ping"></div><span class="text-xs text-gray-400">جاري المعالجة الفورية عبر 2.5 Flash...</span></div>`;
+            resultsStream.appendChild(aiCard);
+            window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+
+            const contentDiv = aiCard.querySelector('div');
+
+            try {
+                const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+                
+                const payload = {
+                    contents: [
+                        { role: 'user', parts: [{ text: "System Instructions: " + systemPrompt }] },
+                        ...chatHistory
+                    ]
+                };
+
+                const res = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const data = await res.json();
+                
+                if (data.candidates && data.candidates[0].content) {
+                    const responseText = data.candidates[0].content.parts[0].text;
+                    chatHistory.push({ role: 'model', parts: [{ text: responseText }] });
+                    
+                    contentDiv.innerHTML = `
+                        <div class="w-full">
+                            <div class="leading-relaxed text-gray-200">${formatText(responseText)}</div>
+                        </div>
+                    `;
+                } else if (data.error) {
+                    contentDiv.innerHTML = `<span class="text-rose-400 text-xs">خطأ من السيرفر: ${data.error.message}</span>`;
+                } else {
+                    contentDiv.innerHTML = `<span class="text-rose-400 text-xs">تعذر جلب الاستجابة. تأكد من صحة المفتاح.</span>`;
+                }
+            } catch (err) {
+                contentDiv.innerHTML = `<span class="text-rose-400 text-xs">فشل الاتصال بالشبكة.</span>`;
+            } finally {
+                sendBtn.disabled = false;
+                sendBtn.classList.remove('opacity-50');
+                window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+            }
+        }
+
+        function newChat() {
+            chatHistory = [];
+            resultsStream.innerHTML = '';
+            resultsStream.classList.add('hidden');
+            welcomeState.classList.remove('hidden');
+        }
+
+        function sanitize(str) {
+            return str.replace(/[&<>'"]/g, tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag));
+        }
+
+        function formatText(text) {
+            return sanitize(text).replace(/\n/g, '<br>');
+        }
+    </script>
+</body>
+</html>
